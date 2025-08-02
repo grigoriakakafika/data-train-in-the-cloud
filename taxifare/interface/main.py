@@ -201,9 +201,10 @@ def evaluate(
 
     # Query your BigQuery processed table and get data_processed using `get_data_with_cache`
     query = f"""
-        SELECT * EXCEPT(_0)
+        SELECT * EXCEPT(pickup_datetime)
         FROM `{GCP_PROJECT}`.{BQ_DATASET}.processed_{DATA_SIZE}
-        WHERE _0 BETWEEN '{min_date}' AND '{max_date}'
+        WHERE pickup_datetime BETWEEN '{min_date}' AND '{max_date}
+        ORDER BY pickup_datetime ASC'
     """
     data_processed_cache_path = Path(f"{LOCAL_DATA_PATH}/processed/processed_{min_date}_{max_date}_{DATA_SIZE}.csv")
     data_processed = get_data_with_cache(
