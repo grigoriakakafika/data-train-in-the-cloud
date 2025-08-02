@@ -1,0 +1,326 @@
+============================= test session starts ==============================
+platform linux -- Python 3.10.6, pytest-8.4.1, pluggy-1.6.0 -- /home/grigo/.pyenv/versions/3.10.6/envs/taxifare-env/bin/python
+cachedir: .pytest_cache
+rootdir: /home/grigo/data-train-in-the-cloud/tests
+configfile: pytest_kitt.ini
+collecting ... collected 9 items
+
+tests/cloud_training/test_cloud_data.py::TestCloudData::test_big_query_dataset_variable_exists PASSED [ 11%]
+tests/cloud_training/test_cloud_data.py::TestCloudData::test_cloud_data_create_dataset PASSED [ 22%]
+tests/cloud_training/test_cloud_data.py::TestCloudData::test_cloud_data_create_table PASSED [ 33%]
+tests/cloud_training/test_main.py::TestMain::test_route_preprocess FAILED [ 44%]
+tests/cloud_training/test_main.py::TestMain::test_route_train[local] FAILED [ 55%]
+tests/cloud_training/test_main.py::TestMain::test_route_train[gcs] FAILED [ 66%]
+tests/cloud_training/test_main.py::TestMain::test_route_evaluate PASSED  [ 77%]
+tests/cloud_training/test_main.py::TestMain::test_route_pred PASSED      [ 88%]
+tests/cloud_training/test_vm.py::test_i_am_a_vm FAILED                   [100%]
+
+=================================== FAILURES ===================================
+________________________ TestMain.test_route_preprocess ________________________
+
+self = <tests.cloud_training.test_main.TestMain object at 0x7fc9e1cc8160>
+fixture_query_1k =      fare_amount           pickup_datetime  ...  dropoff_latitude  passenger_count
+0            8.9 2009-01-15 09:22:3...           4
+454          8.5 2014-12-27 16:47:42+00:00  ...         40.771263                4
+
+[455 rows x 7 columns]
+
+    def test_route_preprocess(self, fixture_query_1k):
+    
+        from taxifare.interface.main import preprocess
+    
+        data_query_path = Path(LOCAL_DATA_PATH).joinpath("raw",f"query_{MIN_DATE}_{MAX_DATE}_{DATA_SIZE}.csv")
+        data_processed_path = Path(LOCAL_DATA_PATH).joinpath("processed",f"processed_{MIN_DATE}_{MAX_DATE}_{DATA_SIZE}.csv")
+    
+        data_query_exists = data_query_path.is_file()
+        data_processed_exists = data_processed_path.is_file()
+    
+        # SETUP
+        if data_query_exists:
+            shutil.copyfile(data_query_path, f'{data_query_path}_backup')
+            data_query_path.unlink()
+        if data_processed_exists:
+            shutil.copyfile(data_processed_path, f'{data_processed_path}_backup')
+            data_processed_path.unlink()
+    
+        # ACT
+        # TODO: add try-except to be certain of reseting state if crash
+        # Check route runs querying Big Query
+>       preprocess(min_date=MIN_DATE, max_date=MAX_DATE)
+
+../code/grigoriakakafika/07-ML-Ops/02-Cloud-training/data-train-in-the-cloud/tests/cloud_training/test_main.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+taxifare/interface/main.py:44: in preprocess
+    data_query = get_data_with_cache(
+taxifare/ml_logic/data.py:58: in get_data_with_cache
+    result = query_job.result()
+../.pyenv/versions/3.10.6/envs/taxifare-env/lib/python3.10/site-packages/google/cloud/bigquery/job/query.py:1595: in result
+    do_get_result()
+../.pyenv/versions/3.10.6/envs/taxifare-env/lib/python3.10/site-packages/google/api_core/retry.py:283: in retry_wrapped_func
+    return retry_target(
+../.pyenv/versions/3.10.6/envs/taxifare-env/lib/python3.10/site-packages/google/api_core/retry.py:190: in retry_target
+    return target()
+../.pyenv/versions/3.10.6/envs/taxifare-env/lib/python3.10/site-packages/google/cloud/bigquery/job/query.py:1584: in do_get_result
+    super(QueryJob, self).result(retry=retry, timeout=timeout)
+../.pyenv/versions/3.10.6/envs/taxifare-env/lib/python3.10/site-packages/google/cloud/bigquery/job/base.py:971: in result
+    return super(_AsyncJob, self).result(timeout=timeout, **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = QueryJob<project=wagon-bootcamp-457012, location=EU, id=acccf407-34ac-4d3e-9672-d9008509f67b>
+timeout = None, retry = <google.api_core.retry.Retry object at 0x7fc9e1d24a60>
+
+    def result(self, timeout=None, retry=DEFAULT_RETRY):
+        """Get the result of the operation, blocking if necessary.
+    
+        Args:
+            timeout (int):
+                How long (in seconds) to wait for the operation to complete.
+                If None, wait indefinitely.
+    
+        Returns:
+            google.protobuf.Message: The Operation's result.
+    
+        Raises:
+            google.api_core.GoogleAPICallError: If the operation errors or if
+                the timeout is reached before the operation completes.
+        """
+        kwargs = {} if retry is DEFAULT_RETRY else {"retry": retry}
+        self._blocking_poll(timeout=timeout, **kwargs)
+    
+        if self._exception is not None:
+            # pylint: disable=raising-bad-type
+            # Pylint doesn't recognize that this is valid in this case.
+>           raise self._exception
+E           google.api_core.exceptions.BadRequest: 400 Unrecognized name: feature_0 at [2:33]; reason: invalidQuery, location: query, message: Unrecognized name: feature_0 at [2:33]
+E           
+E           Location: EU
+E           Job ID: acccf407-34ac-4d3e-9672-d9008509f67b
+
+../.pyenv/versions/3.10.6/envs/taxifare-env/lib/python3.10/site-packages/google/api_core/future/polling.py:137: BadRequest
+----------------------------- Captured stdout call -----------------------------
+[34m
+Loading TensorFlow...[0m
+
+✅ TensorFlow loaded (4.06s)
+[35m
+ ⭐️ Use case: preprocess[0m
+[34m
+Load data from BigQuery server...[0m
+----------------------------- Captured stderr call -----------------------------
+2025-07-28 22:34:41.173946: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 AVX_VNNI FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2025-07-28 22:34:41.682715: I tensorflow/core/util/util.cc:169] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2025-07-28 22:34:41.819517: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory
+2025-07-28 22:34:41.819565: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
+2025-07-28 22:34:41.909155: E tensorflow/stream_executor/cuda/cuda_blas.cc:2981] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+2025-07-28 22:34:43.261551: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libnvinfer.so.7'; dlerror: libnvinfer.so.7: cannot open shared object file: No such file or directory
+2025-07-28 22:34:43.261669: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libnvinfer_plugin.so.7'; dlerror: libnvinfer_plugin.so.7: cannot open shared object file: No such file or directory
+2025-07-28 22:34:43.261677: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Cannot dlopen some TensorRT libraries. If you would like to use Nvidia GPU with TensorRT, please make sure the missing libraries mentioned above are installed properly.
+_______________________ TestMain.test_route_train[local] _______________________
+
+self = <tests.cloud_training.test_main.TestMain object at 0x7fc9e1cc8370>
+fixture_processed_1k =            0    1    2    3    4    5   ...   60   61   62   63   64         65
+0    0.000000  0.0  0.0  0.0  1.0  0.0...0.0   6.500000
+446  0.428571  0.0  0.0  0.0  0.0  0.0  ...  0.0  0.0  0.0  0.0  0.0   8.500000
+
+[447 rows x 66 columns]
+model_target = 'local'
+
+    @pytest.mark.parametrize('model_target', ['local' , 'gcs'])
+    def test_route_train(self, fixture_processed_1k, model_target):
+        """Test route train behave as expected, for various context of LOCAL or GCS model storage"""
+    
+        # 1) SETUP
+        old_model_target = os.environ.get("MODEL_TARGET")
+        os.environ.update(MODEL_TARGET=model_target)
+    
+        data_processed_path = Path(LOCAL_DATA_PATH).joinpath("processed",f"processed_{MIN_DATE}_{MAX_DATE}_{DATA_SIZE}.csv")
+        data_processed_exists = data_processed_path.is_file()
+        if data_processed_exists:
+            shutil.copyfile(data_processed_path, f'{data_processed_path}_backup')
+            data_processed_path.unlink()
+    
+        data_processed_fixture_path = "https://storage.googleapis.com/datascience-mlops/taxi-fare-ny/solutions/data_processed_fixture_2009-01-01_2015-01-01_1k.csv"
+        os.system(f"curl {data_processed_fixture_path} > {data_processed_path}")
+    
+        # 2) ACT
+        from taxifare.interface.main import train
+    
+        # Train it from Big Query
+>       train(min_date=MIN_DATE, max_date=MAX_DATE, learning_rate=0.01, patience=0)
+
+../code/grigoriakakafika/07-ML-Ops/02-Cloud-training/data-train-in-the-cloud/tests/cloud_training/test_main.py:85: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+taxifare/interface/main.py:152: in train
+    model, history = train_model(
+taxifare/ml_logic/model.py:73: in train_model
+    history = model.fit(
+../.pyenv/versions/3.10.6/envs/taxifare-env/lib/python3.10/site-packages/keras/utils/traceback_utils.py:70: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+iterator = <tensorflow.python.data.ops.iterator_ops.OwnedIterator object at 0x7fc97690fc70>
+
+    def tf__train_function(iterator):
+        """Runs a training execution with a single step."""
+        with ag__.FunctionScope('train_function', 'fscope', ag__.ConversionOptions(recursive=True, user_requested=True, optional_features=(), internal_convert_user_code=True)) as fscope:
+            do_return = False
+            retval_ = ag__.UndefinedReturnValue()
+            try:
+                do_return = True
+>               retval_ = ag__.converted_call(ag__.ld(step_function), (ag__.ld(self), ag__.ld(iterator)), None, fscope)
+E               ValueError: in user code:
+E               
+E                   File "/home/grigo/.pyenv/versions/3.10.6/envs/taxifare-env/lib/python3.10/site-packages/keras/engine/training.py", line 1160, in train_function  *
+E                       return step_function(self, iterator)
+E                   File "/home/grigo/.pyenv/versions/3.10.6/envs/taxifare-env/lib/python3.10/site-packages/keras/engine/training.py", line 1146, in step_function  **
+E                       outputs = model.distribute_strategy.run(run_step, args=(data,))
+E                   File "/home/grigo/.pyenv/versions/3.10.6/envs/taxifare-env/lib/python3.10/site-packages/keras/engine/training.py", line 1135, in run_step  **
+E                       outputs = model.train_step(data)
+E                   File "/home/grigo/.pyenv/versions/3.10.6/envs/taxifare-env/lib/python3.10/site-packages/keras/engine/training.py", line 993, in train_step
+E                       y_pred = self(x, training=True)
+E                   File "/home/grigo/.pyenv/versions/3.10.6/envs/taxifare-env/lib/python3.10/site-packages/keras/utils/traceback_utils.py", line 70, in error_handler
+E                       raise e.with_traceback(filtered_tb) from None
+E                   File "/home/grigo/.pyenv/versions/3.10.6/envs/taxifare-env/lib/python3.10/site-packages/keras/engine/input_spec.py", line 295, in assert_input_compatibility
+E                       raise ValueError(
+E               
+E                   ValueError: Input 0 of layer "sequential" is incompatible with the layer: expected shape=(None, 65), found shape=(None, 64)
+
+/tmp/__autograph_generated_filekwszxhak.py:15: ValueError
+----------------------------- Captured stdout call -----------------------------
+[35m
+⭐️ Use case: train[0m
+[34m
+Loading preprocessed validation data...[0m
+[34m
+Load data from local CSV...[0m
+✅ Data loaded, with shape (447, 66)
+[34m
+Load latest model from local registry...[0m
+[34m
+Load latest model from disk...[0m
+✅ Model loaded from local disk
+✅ Model compiled
+[34m
+Training model...[0m
+----------------------------- Captured stderr call -----------------------------
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0 65  153k   65  101k    0     0  60938      0  0:00:02  0:00:01  0:00:01 60919100  153k  100  153k    0     0  87249      0  0:00:01  0:00:01 --:--:-- 87227
+2025-07-28 22:34:54.344419: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcuda.so.1'; dlerror: libcuda.so.1: cannot open shared object file: No such file or directory
+2025-07-28 22:34:54.345275: W tensorflow/stream_executor/cuda/cuda_driver.cc:263] failed call to cuInit: UNKNOWN ERROR (303)
+2025-07-28 22:34:54.345316: I tensorflow/stream_executor/cuda/cuda_diagnostics.cc:156] kernel driver does not appear to be running on this host (LAPTOP-4MAV1ABB): /proc/driver/nvidia/version does not exist
+2025-07-28 22:34:54.347056: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 AVX_VNNI FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+________________________ TestMain.test_route_train[gcs] ________________________
+
+self = <tests.cloud_training.test_main.TestMain object at 0x7fc9e1cc8460>
+fixture_processed_1k =            0    1    2    3    4    5   ...   60   61   62   63   64         65
+0    0.000000  0.0  0.0  0.0  1.0  0.0...0.0   6.500000
+446  0.428571  0.0  0.0  0.0  0.0  0.0  ...  0.0  0.0  0.0  0.0  0.0   8.500000
+
+[447 rows x 66 columns]
+model_target = 'gcs'
+
+    @pytest.mark.parametrize('model_target', ['local' , 'gcs'])
+    def test_route_train(self, fixture_processed_1k, model_target):
+        """Test route train behave as expected, for various context of LOCAL or GCS model storage"""
+    
+        # 1) SETUP
+        old_model_target = os.environ.get("MODEL_TARGET")
+        os.environ.update(MODEL_TARGET=model_target)
+    
+        data_processed_path = Path(LOCAL_DATA_PATH).joinpath("processed",f"processed_{MIN_DATE}_{MAX_DATE}_{DATA_SIZE}.csv")
+        data_processed_exists = data_processed_path.is_file()
+        if data_processed_exists:
+            shutil.copyfile(data_processed_path, f'{data_processed_path}_backup')
+            data_processed_path.unlink()
+    
+        data_processed_fixture_path = "https://storage.googleapis.com/datascience-mlops/taxi-fare-ny/solutions/data_processed_fixture_2009-01-01_2015-01-01_1k.csv"
+        os.system(f"curl {data_processed_fixture_path} > {data_processed_path}")
+    
+        # 2) ACT
+        from taxifare.interface.main import train
+    
+        # Train it from Big Query
+>       train(min_date=MIN_DATE, max_date=MAX_DATE, learning_rate=0.01, patience=0)
+
+../code/grigoriakakafika/07-ML-Ops/02-Cloud-training/data-train-in-the-cloud/tests/cloud_training/test_main.py:85: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+taxifare/interface/main.py:152: in train
+    model, history = train_model(
+taxifare/ml_logic/model.py:73: in train_model
+    history = model.fit(
+../.pyenv/versions/3.10.6/envs/taxifare-env/lib/python3.10/site-packages/keras/utils/traceback_utils.py:70: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+iterator = <tensorflow.python.data.ops.iterator_ops.OwnedIterator object at 0x7fc9743d6d70>
+
+    def tf__train_function(iterator):
+        """Runs a training execution with a single step."""
+        with ag__.FunctionScope('train_function', 'fscope', ag__.ConversionOptions(recursive=True, user_requested=True, optional_features=(), internal_convert_user_code=True)) as fscope:
+            do_return = False
+            retval_ = ag__.UndefinedReturnValue()
+            try:
+                do_return = True
+>               retval_ = ag__.converted_call(ag__.ld(step_function), (ag__.ld(self), ag__.ld(iterator)), None, fscope)
+E               ValueError: in user code:
+E               
+E                   File "/home/grigo/.pyenv/versions/3.10.6/envs/taxifare-env/lib/python3.10/site-packages/keras/engine/training.py", line 1160, in train_function  *
+E                       return step_function(self, iterator)
+E                   File "/home/grigo/.pyenv/versions/3.10.6/envs/taxifare-env/lib/python3.10/site-packages/keras/engine/training.py", line 1146, in step_function  **
+E                       outputs = model.distribute_strategy.run(run_step, args=(data,))
+E                   File "/home/grigo/.pyenv/versions/3.10.6/envs/taxifare-env/lib/python3.10/site-packages/keras/engine/training.py", line 1135, in run_step  **
+E                       outputs = model.train_step(data)
+E                   File "/home/grigo/.pyenv/versions/3.10.6/envs/taxifare-env/lib/python3.10/site-packages/keras/engine/training.py", line 993, in train_step
+E                       y_pred = self(x, training=True)
+E                   File "/home/grigo/.pyenv/versions/3.10.6/envs/taxifare-env/lib/python3.10/site-packages/keras/utils/traceback_utils.py", line 70, in error_handler
+E                       raise e.with_traceback(filtered_tb) from None
+E                   File "/home/grigo/.pyenv/versions/3.10.6/envs/taxifare-env/lib/python3.10/site-packages/keras/engine/input_spec.py", line 295, in assert_input_compatibility
+E                       raise ValueError(
+E               
+E                   ValueError: Input 0 of layer "sequential" is incompatible with the layer: expected shape=(None, 65), found shape=(None, 64)
+
+/tmp/__autograph_generated_filekwszxhak.py:15: ValueError
+----------------------------- Captured stdout call -----------------------------
+[35m
+⭐️ Use case: train[0m
+[34m
+Loading preprocessed validation data...[0m
+[34m
+Load data from local CSV...[0m
+✅ Data loaded, with shape (447, 66)
+[34m
+Load latest model from local registry...[0m
+[34m
+Load latest model from disk...[0m
+✅ Model loaded from local disk
+✅ Model compiled
+[34m
+Training model...[0m
+----------------------------- Captured stderr call -----------------------------
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0 17  153k   17 27542    0     0  18579      0  0:00:08  0:00:01  0:00:07 18571100  153k  100  153k    0     0  72979      0  0:00:02  0:00:02 --:--:-- 73006
+________________________________ test_i_am_a_vm ________________________________
+
+    def test_i_am_a_vm():
+        """
+        Test that this code is being run from a Google VM named as per env variable 'INSTANCE'
+        """
+    
+>       assert platform.node() == INSTANCE, f"You should be running from your instance named '{INSTANCE}'."
+E       AssertionError: You should be running from your instance named 'taxi-instance-wagon'.
+E       assert 'LAPTOP-4MAV1ABB' == 'taxi-instance-wagon'
+E         
+E         - taxi-instance-wagon
+E         + LAPTOP-4MAV1ABB
+
+../code/grigoriakakafika/07-ML-Ops/02-Cloud-training/data-train-in-the-cloud/tests/cloud_training/test_vm.py:9: AssertionError
+=========================== short test summary info ============================
+FAILED tests/cloud_training/test_main.py::TestMain::test_route_preprocess - g...
+FAILED tests/cloud_training/test_main.py::TestMain::test_route_train[local]
+FAILED tests/cloud_training/test_main.py::TestMain::test_route_train[gcs] - V...
+FAILED tests/cloud_training/test_vm.py::test_i_am_a_vm - AssertionError: You ...
+================== 4 failed, 5 passed, 12 warnings in 26.08s ===================
