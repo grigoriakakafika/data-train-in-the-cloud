@@ -62,6 +62,7 @@ def preprocess(min_date:str = '2009-01-01', max_date:str = '2015-01-01') -> None
     # Load a DataFrame onto BigQuery containing [pickup_datetime, X_processed, y]
     # using data.load_data_to_bq()
     # $CHA_BEGIN
+<<<<<<< HEAD
     data_processed_with_timestamp = pd.DataFrame(np.concatenate((
         data_clean[["pickup_datetime"]],
         X_processed,
@@ -70,6 +71,24 @@ def preprocess(min_date:str = '2009-01-01', max_date:str = '2015-01-01') -> None
     processed_feature_cols = [f"feature_{i}" for i in range(X_processed.shape[1])]
     cols = ["pickup_datetime"] + processed_feature_cols + ["fare_amount"]
     data_processed_with_timestamp.columns = cols
+=======
+    num_features = X_processed.shape[1]
+
+    # Create column names for processed features
+    processed_feature_cols = [f"feature_{i}" for i in range(X_processed.shape[1])]
+    df_features = pd.DataFrame(X_processed, columns=processed_feature_cols)
+    df_target = y.reset_index(drop=True)
+    df_timestamp = data_clean[["pickup_datetime"]].reset_index(drop=True)
+
+    # Combine all columns names (timestamp + processed features + target)
+    all_cols = ["pickup_datetime"] + processed_feature_cols + ["fare_amount"]
+
+    # Concatenate arrays (make sure pickup_datetime is values and reshaped properly)
+    data_processed_with_timestamp = pd.concat(
+        [df_timestamp, df_features, df_target], axis=1)
+
+
+>>>>>>> 4280d905a1a9f2b8dd914712384b0e714007cec2
     load_data_to_bq(
         data_processed_with_timestamp,
         gcp_project=GCP_PROJECT,
@@ -107,10 +126,17 @@ def train(
     # Try it out manually on console.cloud.google.com first!
 
     query = f"""
+<<<<<<< HEAD
         SELECT *
         FROM `{GCP_PROJECT}`.{BQ_DATASET}.processed_{DATA_SIZE}
         WHERE pickup_datetime BETWEEN '{min_date}' AND '{max_date}'
         ORDER BY pickup_datetime ASC
+=======
+        SELECT * EXCEPT(_0)
+        FROM `{GCP_PROJECT}`.{BQ_DATASET}.processed_{DATA_SIZE}
+        WHERE _0 BETWEEN '{min_date}' AND '{max_date}'
+        ORDER BY _0 ASC
+>>>>>>> 4280d905a1a9f2b8dd914712384b0e714007cec2
     """
 
     data_processed_cache_path = Path(LOCAL_DATA_PATH).joinpath("processed", f"processed_{min_date}_{max_date}_{DATA_SIZE}.csv")
@@ -133,6 +159,7 @@ def train(
     data_processed_train = data_processed.iloc[:train_length, :].sample(frac=1).to_numpy()
     data_processed_val = data_processed.iloc[train_length:, :].sample(frac=1).to_numpy()
 
+<<<<<<< HEAD
     X_train_processed = data_processed_train[:, 1:-1].astype(np.float32)
     y_train = data_processed_train[:, -1].astype(np.float32)
 
@@ -140,10 +167,19 @@ def train(
     y_val = data_processed_val[:, -1].astype(np.float32)
 
         # $CHA_END
+=======
+    X_train_processed = data_processed_train[:, :-1]
+    y_train = data_processed_train[:, -1]
+
+    X_val_processed = data_processed_val[:, :-1]
+    y_val = data_processed_val[:, -1]
+    # $CHA_END
+>>>>>>> 4280d905a1a9f2b8dd914712384b0e714007cec2
 
     # Train model using `model.py`
     # $CHA_BEGIN
     model = load_model()
+<<<<<<< HEAD
 
     if model is None:
         model = initialize_model(input_shape=X_train_processed.shape[1:])
@@ -156,8 +192,28 @@ def train(
         validation_data=(X_val_processed, y_val)
     )
     # $CHA_END
+=======
+>>>>>>> 4280d905a1a9f2b8dd914712384b0e714007cec2
 
-    val_mae = np.min(history.history['val_mae'])
+    if model is None:
+        model = initialize_model(input_shape=X_train_processed.shape[1:])
+
+    model = compile_model(model, learning_rate=learning_rate)
+    model, history = train_model(
+        model, X_train_processed, y_train,
+        batch_size=batch_size,
+        patience=patience,
+        validation_data=(X_val_processed, y_val)
+    )
+    # $CHA_END
+    try:
+        print("DEBUG: history object =", history)
+        print("DEBUG: history.history keys =", history.history.keys())
+        val_mae = np.min(history.history['val_mae'])
+    except Exception as e:
+        print("❌ Error accessing history:", e)
+        raise
+    #val_mae = np.min(history.history['val_mae'])
 
     params = dict(
         context="train",
@@ -194,9 +250,16 @@ def evaluate(
 
     # Query your BigQuery processed table and get data_processed using `get_data_with_cache`
     query = f"""
+<<<<<<< HEAD
         SELECT * EXCEPT(_0)
         FROM `{GCP_PROJECT}`.{BQ_DATASET}.processed_{DATA_SIZE}
         WHERE _0 BETWEEN '{min_date}' AND '{max_date}'
+=======
+        SELECT * EXCEPT(pickup_datetime)
+        FROM `{GCP_PROJECT}`.{BQ_DATASET}.processed_{DATA_SIZE}
+        WHERE pickup_datetime BETWEEN '{min_date}' AND '{max_date}
+        ORDER BY pickup_datetime ASC'
+>>>>>>> 4280d905a1a9f2b8dd914712384b0e714007cec2
     """
     data_processed_cache_path = Path(f"{LOCAL_DATA_PATH}/processed/processed_{min_date}_{max_date}_{DATA_SIZE}.csv")
     data_processed = get_data_with_cache(

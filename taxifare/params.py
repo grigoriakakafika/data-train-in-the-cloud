@@ -3,7 +3,8 @@ import numpy as np
 
 ##################  VARIABLES  ##################
 DATA_SIZE = os.environ.get("DATA_SIZE")
-CHUNK_SIZE = int(os.environ.get("CHUNK_SIZE"))
+#CHUNK_SIZE = int(os.environ.get("CHUNK_SIZE"))
+CHUNK_SIZE = int(os.environ.get("CHUNK_SIZE", 100000))
 MODEL_TARGET = os.environ.get("MODEL_TARGET")
 GCP_PROJECT = os.environ.get("GCP_PROJECT")
 GCP_PROJECT_WAGON = os.environ.get("GCP_PROJECT_WAGON")
