@@ -164,7 +164,7 @@ def train(
     except Exception as e:
         print("❌ Error accessing history:", e)
         raise
-    val_mae = np.min(history.history['val_mae'])
+    #val_mae = np.min(history.history['val_mae'])
 
     params = dict(
         context="train",
